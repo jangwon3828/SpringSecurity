@@ -34,6 +34,7 @@ public class AjaxSecurityConfig {
         ajaxLoginProcessingFilter.setAuthenticationFailureHandler(ajaxAuthenticationFailureHandler());
         return (AuthenticationManager) ajaxLoginProcessingFilter;
     }
+
     public AjaxLoginProcessingFilter ajaxLoginProcessingFilter() throws Exception {
         AjaxLoginProcessingFilter ajaxLoginProcessingFilter = new AjaxLoginProcessingFilter();
         ajaxLoginProcessingFilter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
@@ -42,7 +43,6 @@ public class AjaxSecurityConfig {
         return ajaxLoginProcessingFilter;
     }
 
-    @Bean
     public AuthenticationSuccessHandler ajaxAuthenticationSuccessHandler() {
         return new AjaxAuthenticationSuccessHandler();
     }
@@ -62,15 +62,25 @@ public class AjaxSecurityConfig {
         http    //UsernamePasswordAuthenticationFilter 앞에서 작동하게 설정
                 .addFilterBefore(ajaxLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class);
         http.exceptionHandling()
-                        .authenticationEntryPoint(new AjaxLoginAuthenticationEntryPoint())
-                                .accessDeniedHandler(ajaxAccessDeniedHandler());
+                .authenticationEntryPoint(new AjaxLoginAuthenticationEntryPoint())
+                .accessDeniedHandler(ajaxAccessDeniedHandler());
         http
                 .csrf().disable();
+        customConfigurerAjax(http);
         return http.build();
     }
 
+    private void customConfigurerAjax(HttpSecurity http) throws Exception {
+        http.apply(new AjaxLoginConfigurer<>())
+                .successHandlerAjax(ajaxAuthenticationSuccessHandler())
+                .failureHandlerAjax(ajaxAuthenticationFailureHandler())
+                .setAuthenticationManager(authenticationManager(authenticationConfiguration))
+                .createLoginProcessingUrlMatcher("/api/login");
+
+    }
+
     private AccessDeniedHandler ajaxAccessDeniedHandler() {
-        return  new AjaxAccessDeniedHandler();
+        return new AjaxAccessDeniedHandler();
     }
 
 
